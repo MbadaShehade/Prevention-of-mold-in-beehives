@@ -404,6 +404,7 @@ const BeehiveManagement = ({email, username, password, hiveGroups, setHiveGroups
           })}
         </div>
         
+        
         {/* Instructions */}
         <div className="instructions-card" >
           <h2 className="instructions-title">How to use:</h2>
