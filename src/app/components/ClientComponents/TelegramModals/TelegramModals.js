@@ -75,13 +75,14 @@ const TelegramModals = ({
         </div>
       )}
 
+
       {/* Custom Chat ID Input Modal */}
       {showChatIdInputModal && (
         <div className="telegram-modal-overlay" onClick={handleModalOverlayClick}>
           <div className="telegram-modal">
             <div className="telegram-modal-content">
               <h3 className="telegram-modal-title">Telegram Chat ID</h3>
-              <p>Contact our bot "DailyBeeHiveReportbot" and write /start, After that ,please enter your Telegram chat ID. To get your ID, contact @userinfobot on Telegram.</p>
+              <p>Contact our bot &quot;DailyBeeHiveReportbot&quot; and write /start. After that, please enter your Telegram chat ID. To get your ID, contact @userinfobot on Telegram.</p>
               <input
                 type="text"
                 className="telegram-input"
