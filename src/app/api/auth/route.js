@@ -11,9 +11,9 @@ export async function POST(request) {
     const users = db.collection('users');
 
     if (action === 'signup') { //###################SIGNUP API REQUEST###################
-      // Check if user already exists
-      const existingUser = await users.findOne({ 
-        $or: [{ email }] 
+      // Check if user already exists (unique username or email)
+      const existingUser = await users.findOne({
+        $or: [{ username }, { email }]
       });
 
       if (existingUser) {
@@ -21,18 +21,6 @@ export async function POST(request) {
           { error: 'Username or email already exists' },
           { status: 400 }
         );
-      }
-
-      // Check if password is already used by another user
-      const allUsers = await users.find({}).toArray();
-      for (const user of allUsers) {
-        const passwordMatch = await bcrypt.compare(password, user.password);
-        if (passwordMatch) {
-          return NextResponse.json(
-            { error: 'This password is already in use. Please choose a different password.' },
-            { status: 400 }
-          );
-        }
       }
 
       // Hash the password

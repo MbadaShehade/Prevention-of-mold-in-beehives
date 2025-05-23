@@ -68,16 +68,35 @@ export default function LoginPage() {
     setError('');
     setIsLoading(true);
 
-    if (!isLogin && password !== confirmPassword) {
-      setError('Passwords do not match');
-      setIsLoading(false);
-      return;
+    // Validation for both login and signup
+    const emailRegex = /^[^\s@]+@[^\s@]+\.com$/;
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{7,}$/; // at least 7 chars, 1 number, 1 capital
+    let validationError = '';
+
+    if (!isLogin) {
+      // Sign Up validation
+      if (username.length <= 4) {
+        validationError = 'Username must be longer than 4 characters';
+      } else if (!emailRegex.test(email)) {
+        validationError = 'Please enter a valid email address';
+      } else if (!passwordRegex.test(password)) {
+        validationError = 'Password must be at least 7 characters, contain at least 1 number and 1 capital letter';
+      } else if (password !== confirmPassword) {
+        validationError = 'Passwords do not match';
+      }
+    } else {
+      // Login validation
+      if (username.length <= 4) {
+        validationError = 'Username must be longer than 4 characters';
+      } else if (!emailRegex.test(email)) {
+        validationError = 'Please enter a valid email address';
+      } else if (password.length === 0) {
+        validationError = 'Please enter your password';
+      }
     }
 
-    // Validate email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
+    if (validationError) {
+      setError(validationError);
       setIsLoading(false);
       return;
     }
@@ -100,24 +119,41 @@ export default function LoginPage() {
       let data;
       try {
         data = await response.json();
-      } catch (jsonError) {
-        // This catches the specific JSON parsing error
-        console.error('JSON parsing error:', jsonError);
+      } catch (jsonErr) {
+        setError('An unexpected error occurred. Please try again.');
         setIsLoading(false);
-        setError(`Server returned invalid JSON. This usually means the server is down or not properly connected to the database. Status: ${response.status}`);
         return;
       }
 
       if (!response.ok) {
+        // Custom error handling for signup/login
+        if (!isLogin && data.error && data.error.toLowerCase().includes('username or email already exists')) {
+          setError('Username or email already exists. Please use a different username or email.');
+        } else if (data.error && data.error.toLowerCase().includes('username not found')) {
+          setError('Username not found');
+        } else if (data.error && data.error.toLowerCase().includes('email not found')) {
+          setError('Email not found');
+        } else if (data.error && data.error.toLowerCase().includes('wrong password')) {
+          setError('Incorrect password');
+        } else if (data.error && data.error.toLowerCase().includes('username must be longer')) {
+          setError('Username must be longer than 4 characters');
+        } else if (data.error && data.error.toLowerCase().includes('please enter a valid email address')) {
+          setError('Please enter a valid email address');
+        } else if (data.error && data.error.toLowerCase().includes('password')) {
+          setError(data.error);
+        } else {
+          setError(data.error || (isLogin ? 'Authentication failed' : 'Sign up failed'));
+        }
+        setIsLoading(false);
+        // Switch to signup form if user not found
         if (data.error === 'User not found, Sign Up first') {
-          // Switch to signup form and clear fields
           setIsLogin(false);
           setUsername('');
           setEmail('');
           setPassword('');
           setConfirmPassword('');
         }
-        throw new Error(data.error || 'Authentication failed');
+        return;
       }
 
       // Clear form after successful authentication
@@ -148,7 +184,7 @@ export default function LoginPage() {
     setIsLoading(true);
     
     // Validate email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.com$/;
     if (!emailRegex.test(resetEmail)) {
       setResetError('Please enter a valid email address');
       setIsLoading(false);
@@ -313,7 +349,7 @@ export default function LoginPage() {
                 Email
               </label>
               <input
-                type="email"
+                type="text"
                 id="email"
                 placeholder="Enter your email"
                 value={email}
@@ -453,7 +489,7 @@ export default function LoginPage() {
                     Email
                   </label>
                   <input
-                    type="email"
+                    type="text"
                     id="resetEmail"
                     placeholder="Enter your email"
                     value={resetEmail}

@@ -125,23 +125,66 @@ const BeehiveManagement = ({email, username, password, hiveGroups, setHiveGroups
     setMessage({ text: 'Connecting to hive sensors...', type: 'info' });
     
     try {
-      // Try to get password from props or sessionStorage
       const userNameForTopic = username || sessionStorage.getItem('username');
       
       if (!userNameForTopic) {
-        console.error('No username provided to BeehiveManagement for MQTT topic');
+        console.error('No username provided for MQTT topic');
         setMessage({ text: 'Error: Missing username for MQTT topic', type: 'error' });
         setTimeout(() => setMessage({ text: '', type: '' }), 3000);
         setIsLoading(false);
         return;
       }
 
-      // Connect to MQTT and wait for initial data
       const client = mqtt.connect('ws://test.mosquitto.org:8080', {
         clientId: `hiveguard_${Math.random().toString(16).substr(2, 8)}`,
         clean: true,
-        reconnectPeriod: 1000,
-        connectTimeout: 30 * 1000
+        reconnectPeriod: 0,
+        connectTimeout: 30000, 
+        keepalive: 60,       
+        resubscribe: false,   
+        protocol: 'ws',       
+        qos: 1               
+      });
+
+      let connectionTimeout = setTimeout(() => {
+        if (client) {
+          client.end(true);
+          setMessage({ text: 'Connection timeout. Please try again.', type: 'error' });
+          setTimeout(() => setMessage({ text: '', type: '' }), 3000);
+          setIsLoading(false);
+        }
+      }, 31000);
+
+      // --- DATA TIMEOUT: If no sensor data received in 10 seconds, show error and stop loading ---
+      let dataTimeout = setTimeout(() => {
+        if (client) {
+          client.end(true);
+          setMessage({ text: 'No sensor data received. Please check your hive sensors.', type: 'error' });
+          setTimeout(() => setMessage({ text: '', type: '' }), 4000);
+          setIsLoading(false);
+        }
+      }, 10000); // 10 seconds
+
+      client.on('connect', () => {
+        clearTimeout(connectionTimeout);
+        console.log('Connected to MQTT broker');
+        
+        const tempTopic = `${userNameForTopic}/moldPrevention/hive${hive.id}/temp`;
+        const humidityTopic = `${userNameForTopic}/moldPrevention/hive${hive.id}/humidity`;
+        
+        // Only subscribe if client is still connected
+        if (client.connected) {
+          client.subscribe([tempTopic, humidityTopic], (err) => {
+            if (err) {
+              console.error('Subscription error:', err);
+              client.end();
+              clearTimeout(dataTimeout);
+              setMessage({ text: 'Error connecting to hive sensors', type: 'error' });
+              setTimeout(() => setMessage({ text: '', type: '' }), 3000);
+              setIsLoading(false);
+            }
+          });
+        }
       });
 
       let initialDataReceived = {
@@ -151,27 +194,6 @@ const BeehiveManagement = ({email, username, password, hiveGroups, setHiveGroups
 
       let tempValue = null;
       let humidityValue = null;
-
-      // Track connection state
-      let isConnected = false;
-      // Set a timeout for waiting for data
-      const timeout = setTimeout(() => {
-        if (!isConnected) {
-          client.end();
-          setMessage({ text: 'Setup hive sensors and try again', type: 'error' });
-          setTimeout(() => setMessage({ text: '', type: '' }), 5000);
-          setIsLoading(false);
-        }
-      }, 10000); // 10 second timeout
-
-      client.on('connect', () => {
-        isConnected = true;
-        clearTimeout(timeout);
-        console.log('Connected to MQTT broker for initial data');
-        const tempTopic = `${userNameForTopic}/moldPrevention/hive${hive.id}/temp`;
-        const humidityTopic = `${userNameForTopic}/moldPrevention/hive${hive.id}/humidity`;
-        client.subscribe([tempTopic, humidityTopic]);
-      });
 
       client.on('message', (topic, message) => {
         const value = parseFloat(message.toString());
@@ -186,10 +208,9 @@ const BeehiveManagement = ({email, username, password, hiveGroups, setHiveGroups
         }
 
         if (initialDataReceived.temperature && initialDataReceived.humidity) {
-          clearTimeout(timeout);
           client.end();
+          clearTimeout(dataTimeout);
           
-          // Store the initial data with correct values
           localStorage.setItem(`hiveData_${hive.id}`, JSON.stringify({
             data: {
               temperature: tempValue,    
@@ -205,13 +226,19 @@ const BeehiveManagement = ({email, username, password, hiveGroups, setHiveGroups
 
       client.on('error', (err) => {
         console.error('MQTT Error:', err);
-        clearTimeout(timeout);
+        clearTimeout(connectionTimeout);
+        clearTimeout(dataTimeout);
         client.end();
         setMessage({ text: 'Error connecting to hive sensors', type: 'error' });
         setTimeout(() => setMessage({ text: '', type: '' }), 3000);
         setIsLoading(false);
       });
 
+      client.on('close', () => {
+        clearTimeout(connectionTimeout);
+        clearTimeout(dataTimeout);
+        console.log('MQTT connection closed');
+      });
     } catch (error) {
       console.error('Error fetching hive data:', error);
       setMessage({ text: 'Failed to load hive data', type: 'error' });
@@ -378,7 +405,7 @@ const BeehiveManagement = ({email, username, password, hiveGroups, setHiveGroups
         </div>
         
         {/* Instructions */}
-        <div className="instructions-card">
+        <div className="instructions-card" >
           <h2 className="instructions-title">How to use:</h2>
           <ul className="instructions-list">
             <li>You need to set up sensors in your hive to view temperature and humidity data</li>
