@@ -74,8 +74,6 @@ const TelegramModals = ({
           </div>
         </div>
       )}
-
-
       {/* Custom Chat ID Input Modal */}
       {showChatIdInputModal && (
         <div className="telegram-modal-overlay" onClick={handleModalOverlayClick}>
