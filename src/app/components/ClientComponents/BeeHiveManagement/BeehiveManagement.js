@@ -30,6 +30,7 @@ const BeehiveManagement = ({email, username, password, hiveGroups, setHiveGroups
   const [showAddHiveConfirm, setShowAddHiveConfirm] = useState(false);
   const [pendingHiveAdd, setPendingHiveAdd] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  
 
   // Persist fake hive data for each hive
   const [fakeHiveData, setFakeHiveData] = useState({});
