@@ -47,6 +47,7 @@ const HiveDetails = () => {
   const router = useRouter();
   const hiveId = searchParams.get('id');
   const email = searchParams.get('email');
+  const hiveName = searchParams.get('name') || `Hive ${hiveId}`;
   const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
   const [airPumpDate, setAirPumpDate] = useState(null);
@@ -1757,6 +1758,7 @@ const HiveDetails = () => {
       <Header isLoggedIn={false} hiveDetails={true}/>
       <FlowersRenderer />
 
+
       <button
         onClick={handleReturnClick}
         className='return-button'
@@ -1774,7 +1776,7 @@ const HiveDetails = () => {
       <div className="content-wrapperx">
         <div className="headerx">
           <h1 className={`main-titleHive ${theme === 'dark' ? 'dark' : 'light'}`}>
-            {hiveData.name},
+            {hiveData.name}
           </h1>
           <h2 className='real-time-data-title' style={{marginLeft: '0', textAlign: 'left'}}>
             Real-time temperature and humidity data inside the hive
