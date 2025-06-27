@@ -14,6 +14,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "HiveGuard - Protect Your Hive With IOT",
@@ -22,7 +23,6 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   // Initialize MQTT monitoring service on server
-  fetchServerMQTTMonitor();
   
   return (
     <html lang="en" suppressHydrationWarning>
@@ -38,6 +38,22 @@ export default function RootLayout({ children }) {
             scroll-behavior: smooth;
           }
         `}} />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  // Set theme class on <html> as early as possible
+                  // Always set theme to light, ignoring previous user selection
+                  document.documentElement.classList.add('light');
+                  localStorage.setItem('theme', 'light');
+                } catch (e) {
+                  // fallback: do nothing
+                }
+              })();
+            `,
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -60,7 +76,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="light">
           <div className="App">
             {children}
             <Footer />

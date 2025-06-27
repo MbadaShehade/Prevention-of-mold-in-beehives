@@ -287,3 +287,12 @@ z-index: 2;
   }
   
 } 
+
+@media (max-width: 576px) {
+  .monitoring-image{
+    display: none;
+  }
+  .step-imageRight{
+    margin-left: -1px;
+  }
+}

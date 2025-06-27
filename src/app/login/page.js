@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import Header from '../components/ClientComponents/Header/Header';
 import LoginPage from '../components/ClientComponents/LoginPage/LoginPage';
 import './login-page.css'; 

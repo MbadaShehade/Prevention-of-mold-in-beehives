@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Line } from 'react-chartjs-2';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Download, Calendar, Thermometer, Droplets } from 'lucide-react';
 
 const HistoricalDataGraph = ({ 
@@ -21,6 +21,18 @@ const HistoricalDataGraph = ({
   setActiveDropdown,
   handleExport
 }) => {
+  // Transform data for Recharts
+  const rechartsData = historicalData && historicalData.labels && historicalData.datasets && historicalData.datasets.length > 0
+    ? historicalData.labels.map((label, idx) => {
+        const entry = { name: label };
+        historicalData.datasets.forEach(ds => {
+          if (ds.label.includes('Temperature')) entry.temperature = ds.data[idx];
+          if (ds.label.includes('Humidity')) entry.humidity = ds.data[idx];
+        });
+        return entry;
+      })
+    : [];
+
   return (
     <div className="chart-section historical">
       <h1 className={`temperature-title ${theme === 'dark' ? 'dark' : 'light'}`}>
@@ -110,7 +122,58 @@ const HistoricalDataGraph = ({
         </div>
       </div>
       <div className="chart-wrapper" id="historical-chart">
-        <Line data={historicalData} options={historicalChartOptions} />
+        {rechartsData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={rechartsData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#fff2' : '#ccc'} />
+              <XAxis
+                dataKey="name"
+                stroke={theme === 'dark' ? '#fff' : '#000'}
+                tick={{ fill: theme === 'dark' ? '#fff' : '#000' }}
+              />
+              <YAxis
+                stroke={theme === 'dark' ? '#fff' : '#000'}
+                tick={{ fill: theme === 'dark' ? '#fff' : '#000' }}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: theme === 'dark' ? '#1e293b' : '#fff',
+                  color: theme === 'dark' ? '#fff' : '#000',
+                  border: '1px solid #8884d8'
+                }}
+                labelStyle={{ color: theme === 'dark' ? '#fff' : '#000' }}
+                itemStyle={{ color: theme === 'dark' ? '#fff' : '#000' }}
+              />
+              <Legend
+                wrapperStyle={{
+                  color: theme === 'dark' ? '#fff' : '#000'
+                }}
+              />
+              {activeMetrics.temperature && (
+                <Line
+                  type="monotone"
+                  dataKey="temperature"
+                  name="Temperature (°C)"
+                  stroke={theme === 'dark' ? '#fff' : '#ba6719'}
+                  dot={{ stroke: theme === 'dark' ? '#fff' : '#ba6719', fill: theme === 'dark' ? '#fff' : '#ba6719' }}
+                  connectNulls
+                />
+              )}
+              {activeMetrics.humidity && (
+                <Line
+                  type="monotone"
+                  dataKey="humidity"
+                  name="Humidity (%)"
+                  stroke={theme === 'dark' ? '#fff' : '#0EA5E9'}
+                  dot={{ stroke: theme === 'dark' ? '#fff' : '#0EA5E9', fill: theme === 'dark' ? '#fff' : '#0EA5E9' }}
+                  connectNulls
+                />
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <div>No data available</div>
+        )}
       </div>
       <div className="export-container">
         <button 

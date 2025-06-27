@@ -71,3 +71,12 @@
     line-height: 1.5;
     }
 }
+
+@media (max-width: 576px) {
+    .technical-details-content img {
+        max-width: 250px !important;
+        transform: scale(0.9) rotate(5deg) !important;
+        margin-top: 10px !important;
+        margin-left: 10px !important;
+    }
+}

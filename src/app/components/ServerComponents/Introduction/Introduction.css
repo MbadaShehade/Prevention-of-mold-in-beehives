@@ -217,6 +217,12 @@
   }
 }
 
+@media (max-width: 576px) {
+  .beehive-image-container {
+    display: none;
+  }
+}
+
 /* Animation keyframes for sliding from left */
 @keyframes slideFromLeft {
     0% {

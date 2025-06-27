@@ -8,6 +8,7 @@
 }
 
 
+
 .real-time-data-title {
   font-size: 1.5rem;
   font-weight: 500;
@@ -59,6 +60,7 @@
   min-height: calc(100vh - 4rem);
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 @media (max-width: 840px) {
@@ -474,11 +476,12 @@
 }
 
 .charts-container {
+  width: 96%;
+  max-width: 96%;
   display: flex;
   flex-direction: column;
   gap: 2rem;
   margin-top: 2rem;
-  width: 96%;
 }
 
 .chart-section {
@@ -489,12 +492,13 @@
   transition: box-shadow 0.3s ease;
 }
 
-
 .chart-wrapper {
-  height: 300px;
-  margin-top: 1rem;
-  position: relative;
-  /* Removed box-shadow */
+  width: 96%;
+  max-width: 96%;
+  overflow: hidden;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Dark theme adjustments for charts */

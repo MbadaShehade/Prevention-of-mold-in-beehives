@@ -9,11 +9,12 @@ export async function fetchServerMQTTMonitor() {
   if (typeof window !== 'undefined') return;
   
   try {
-    // Get the base URL from environment or default to localhost
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    // Use relative URL for Vercel compatibility
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const url = baseUrl ? `${baseUrl}/api/mqtt-monitor` : '/api/mqtt-monitor';
     
     // Fetch the monitoring service to ensure it's running
-    const response = await fetch(`${baseUrl}/api/mqtt-monitor`, {
+    const response = await fetch(url, {
       cache: 'no-store',
       method: 'GET'
     });
@@ -31,7 +32,7 @@ export async function fetchServerMQTTMonitor() {
 // Check the status of the MQTT monitor
 export async function checkMQTTMonitorStatus() {
   try {
-    // Get the base URL from environment or default to localhost
+    // Use relative URL for Vercel compatibility
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
     const url = baseUrl ? `${baseUrl}/api/mqtt-monitor` : '/api/mqtt-monitor';
     

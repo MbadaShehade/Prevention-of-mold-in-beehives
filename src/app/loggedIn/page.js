@@ -20,6 +20,7 @@ export default function LoggedInPage() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [hiveGroups, setHiveGroups] = useState([]);
 
+  
   // Store password in state and sessionStorage when component mounts
   useEffect(() => {
     const urlPassword = searchParams.get('password');

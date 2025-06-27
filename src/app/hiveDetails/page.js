@@ -1,5 +1,6 @@
 'use client';
 
+import '@/app/_lib/chartjs-setup';
 import './hiveDetails.css';
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -15,33 +16,14 @@ import HistoricalDataGraph from '../components/ClientComponents/HistoricalDataGr
 import TelegramModals from '../components/ClientComponents/TelegramModals/TelegramModals';
 import ClearHistoryModal from '../components/ClientComponents/ClearHistoryModal/ClearHistoryModal';
 import mqtt from 'mqtt';
-import { Chart } from 'chart.js/auto';
 import { MQTT_URL } from '../_lib/mqtt-config';
 import { checkMQTTMonitorStatus } from '@/app/_lib/mqtt-helpers';
 import { saveTimerState, loadTimerState, clearTimerState } from '@/app/_lib/timerStorage';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+import { Chart } from 'chart.js/auto';
+import domtoimage from 'dom-to-image';
 
+const MAX_DATA_POINTS = 20;
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
-const MAX_DATA_POINTS = 10;
 
 const formatTime = (date) => {
   return date.toLocaleTimeString('en-US', {
@@ -59,16 +41,13 @@ const formatDate = (date) => {
   return `${day}/${month}/${year}`;
 };
 
-const sortDates = (dates) => {
-  if (!Array.isArray(dates)) return [];
-  return [...new Set(dates)].sort();
-};
 
 const HiveDetails = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const hiveId = searchParams.get('id');
   const email = searchParams.get('email');
+  const hiveName = searchParams.get('name') || `Hive ${hiveId}`;
   const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
   const [airPumpDate, setAirPumpDate] = useState(null);
@@ -91,8 +70,9 @@ const HiveDetails = () => {
     humidity: null,
     airPump: "OFF" 
   });  
+
   const [airPumpActivations, setAirPumpActivations] = useState(() => {
-    // Try to load from localStorage as fallback
+    
     if (typeof window !== 'undefined') {
       try {
         const savedActivations = localStorage.getItem(`airPumpActivations_${hiveId}`);
@@ -107,7 +87,6 @@ const HiveDetails = () => {
   });
   
 
-  // Save activations to localStorage whenever they change
   useEffect(() => {
     if (typeof window !== 'undefined' && airPumpActivations.length > 0) {
       try {
@@ -445,109 +424,49 @@ const HiveDetails = () => {
     
     setSending(true);
     try {
-    
-      // Save current data to a JSON file on the server for persistence
-      await fetch('/api/save-hive-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          hiveId: hiveId,
-          temperature: hiveData.temperature,
-          humidity: hiveData.humidity,
-          email: email 
-        }),
-      });
-      
-      const tempCanvas = document.querySelector('#temperature-chart canvas');
-      const humidityCanvas = document.querySelector('#humidity-chart canvas');
-      
-      if (!tempCanvas || !humidityCanvas) {
-        console.error('Chart canvases not found');
-        setSending(false);
-        return;
-      }
-      
-      // Get chart instances
-      const tempChart = Chart.getChart(tempCanvas);
-      const humidityChart = Chart.getChart(humidityCanvas);
-      
-      if (!tempChart || !humidityChart) {
-        console.error('Chart instances not found');
-        setSending(false);
-        return;
-      }
-      
-      // Store original settings
-      const originalSettings = {
-        temperature: {
-          yTicksColor: tempChart.options.scales.y.ticks.color,
-          xTicksColor: tempChart.options.scales.x.ticks.color,
-          yGridColor: tempChart.options.scales.y.grid.color,
-          xGridColor: tempChart.options.scales.x.grid.color,
-          legendColor: tempChart.options.plugins.legend.labels.color
-        },
-        humidity: {
-          yTicksColor: humidityChart.options.scales.y.ticks.color,
-          xTicksColor: humidityChart.options.scales.x.ticks.color,
-          yGridColor: humidityChart.options.scales.y.grid.color,
-          xGridColor: humidityChart.options.scales.x.grid.color,
-          legendColor: humidityChart.options.plugins.legend.labels.color
-        }
-      };
-      
-      tempChart.options.scales.y.ticks.color = '#000000';
-      tempChart.options.scales.x.ticks.color = '#000000';
-      tempChart.options.scales.y.grid.color = 'rgba(0, 0, 0, 0.2)';
-      tempChart.options.scales.x.grid.color = 'rgba(0, 0, 0, 0.2)';
-      tempChart.options.plugins.legend.labels.color = '#000000';
-      tempChart.update();
-      
-      humidityChart.options.scales.y.ticks.color = '#000000';
-      humidityChart.options.scales.x.ticks.color = '#000000';
-      humidityChart.options.scales.y.grid.color = 'rgba(0, 0, 0, 0.2)';
-      humidityChart.options.scales.x.grid.color = 'rgba(0, 0, 0, 0.2)';
-      humidityChart.options.plugins.legend.labels.color = '#000000';
-      humidityChart.update();
-      
-      // Create temporary canvases with white backgrounds
-      const createOptimizedImage = (canvas) => {
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        const ctx = tempCanvas.getContext('2d');
-        
-        // Fill with white background
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw the chart on top
-        ctx.drawImage(canvas, 0, 0);
-        
-        return tempCanvas.toDataURL('image/png');
-      };
-      
-      // capture the current state of the canvas as PNG with white background
-      const temperatureImage = createOptimizedImage(tempCanvas);
-      const humidityImage = createOptimizedImage(humidityCanvas);
-      
-      // Restore original chart settings
-      tempChart.options.scales.y.ticks.color = originalSettings.temperature.yTicksColor;
-      tempChart.options.scales.x.ticks.color = originalSettings.temperature.xTicksColor;
-      tempChart.options.scales.y.grid.color = originalSettings.temperature.yGridColor;
-      tempChart.options.scales.x.grid.color = originalSettings.temperature.xGridColor;
-      tempChart.options.plugins.legend.labels.color = originalSettings.temperature.legendColor;
-      tempChart.update();
-      
-      humidityChart.options.scales.y.ticks.color = originalSettings.humidity.yTicksColor;
-      humidityChart.options.scales.x.ticks.color = originalSettings.humidity.xTicksColor;
-      humidityChart.options.scales.y.grid.color = originalSettings.humidity.yGridColor;
-      humidityChart.options.scales.x.grid.color = originalSettings.humidity.xGridColor;
-      humidityChart.options.plugins.legend.labels.color = originalSettings.humidity.legendColor;
-      humidityChart.update();
-      
       const username = searchParams.get('username') || 'User';
+      
+      // Get the chart containers
+      const tempChartContainer = document.querySelector('#temperature-chart');
+      const humidityChartContainer = document.querySelector('#humidity-chart');
+      
+      // Use domtoimage to capture the entire chart containers
+      let tempChartBase64 = null;
+      let humidityChartBase64 = null;
+      
+      try {
+        if (tempChartContainer) {
+          const tempDataUrl = await domtoimage.toPng(tempChartContainer, {
+            bgcolor: theme === 'dark' ? '#1e293b' : '#ffffff',
+            style: {
+              backgroundColor: theme === 'dark' ? '#1e293b' : '#ffffff'
+            },
+            width: tempChartContainer.offsetWidth,
+            height: tempChartContainer.offsetHeight,
+            filter: (node) => {
+              return !node.classList?.contains('export-button') && !node.classList?.contains('export-dropdown');
+            }
+          });
+          tempChartBase64 = tempDataUrl.split(',')[1];
+        }
+        
+        if (humidityChartContainer) {
+          const humidityDataUrl = await domtoimage.toPng(humidityChartContainer, {
+            bgcolor: theme === 'dark' ? '#1e293b' : '#ffffff',
+            style: {
+              backgroundColor: theme === 'dark' ? '#1e293b' : '#ffffff'
+            },
+            width: humidityChartContainer.offsetWidth,
+            height: humidityChartContainer.offsetHeight,
+            filter: (node) => {
+              return !node.classList?.contains('export-button') && !node.classList?.contains('export-dropdown');
+            }
+          });
+          humidityChartBase64 = humidityDataUrl.split(',')[1];
+        }
+      } catch (imageError) {
+        console.error('Error capturing chart images:', imageError);
+      }
       
       const response = await fetch('/api/send-telegram', {
         method: 'POST',
@@ -559,22 +478,22 @@ const HiveDetails = () => {
           temperature: hiveData.temperature,
           humidity: hiveData.humidity,
           chatId: telegramChatId,
-          temperature_image: temperatureImage,
-          humidity_image: humidityImage,
           username: username,
           autoReport: isAutoReport,
-          forceWhiteBackground: true,  
           reportType: isAutoReport ? "Automatic In-App Report" : "Manual User Requested Report",
-          airPumpStatus: hiveData.airPump || "OFF"  
+          airPumpStatus: hiveData.airPump || "OFF",
+          tempChartBase64,
+          humidityChartBase64
         }),
       });
+      
       const data = await response.json();
       if (data.success) {
         if (!isAutoReport) {
-          setSuccessMessage('Hive report PDF sent to your Telegram successfully!');
+          setSuccessMessage('Hive report sent to your Telegram successfully!');
           // Hide the message after 5 seconds
           setTimeout(() => {
-            if (successMessage === 'Hive report PDF sent to your Telegram successfully!') {
+            if (successMessage === 'Hive report sent to your Telegram successfully!') {
               setSuccessMessage('');
             }
           }, 5000);
@@ -1676,67 +1595,52 @@ const HiveDetails = () => {
   };
 
   const handleExport = (chartType, format) => {
-    const canvas = document.querySelector(`#${chartType}-chart canvas`);
-    if (!canvas) {
-      alert('Cannot find chart to export. Please try again.');
-      return;
-    }
-
-    try {
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width * 2; // Double the resolution for better quality
-      tempCanvas.height = canvas.height * 2;
-      const tempCtx = tempCanvas.getContext('2d');
-      
-      // Scale for better resolution
-      tempCtx.scale(2, 2);
-      
-      // First fill with theme background
-      tempCtx.fillStyle = theme === 'dark' ? '#1e293b' : '#ffffff';
-      tempCtx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Then draw the original canvas content (with its current styling)
-      tempCtx.drawImage(canvas, 0, 0);
-      
-      // Set proper MIME type and quality
-      let mimeType, quality;
-      switch (format) {
-        case 'png':
-          mimeType = 'image/png';
-          quality = 1.0;
-          break;
-        case 'jpg':
-          mimeType = 'image/jpeg';
-          quality = 0.95; // High quality setting for JPEG
-          break;
-        default:
-          mimeType = 'image/png';
-          quality = 1.0;
+    setTimeout(() => {
+      const chartWrapper = document.querySelector(`#${chartType}-chart`);
+      if (!chartWrapper) {
+        alert('Chart image not found. Please make sure the chart is visible.');
+        setActiveDropdown(null);
+        return;
       }
+      const bgColor = theme === 'dark' ? '#1e293b' : '#ffffff';
 
-      // Create and trigger download
-      const link = document.createElement('a');
-      link.download = `${chartType}-data-${formatDate(new Date())}.${format}`;
-      link.href = tempCanvas.toDataURL(mimeType, quality);
-      link.click();
-      
-      // Clean up
-      setTimeout(() => URL.revokeObjectURL(link.href), 100);
-    } catch (error) {
-      console.error('Error exporting chart:', error);
-      // Fallback to direct canvas export if the enhanced method fails
-      try {
-        const link = document.createElement('a');
-        link.download = `${chartType}-data-${formatDate(new Date())}.${format}`;
-        link.href = canvas.toDataURL(format === 'jpg' ? 'image/jpeg' : 'image/png');
-        link.click();
-      } catch (fallbackError) {
-        console.error('Fallback export failed:', fallbackError);
-        alert('Failed to export chart. Your browser may not support this feature.');
-      }
-    }
-    
-    setActiveDropdown(null);
+      // Save original style
+      const originalPaddingBottom = chartWrapper.style.paddingBottom;
+      // Add extra padding to ensure legend/labels are visible
+      chartWrapper.style.paddingBottom = '48px';
+
+      const exportOptions = {
+        bgcolor: bgColor,
+        style: {
+          backgroundColor: bgColor,
+        },
+        width: chartWrapper.offsetWidth,
+        height: chartWrapper.offsetHeight,
+        filter: (node) => {
+          if (node.classList && (node.classList.contains('export-button') || node.classList.contains('export-dropdown'))) {
+            return false;
+          }
+          return true;
+        }
+      };
+      const exportFn = format === 'jpg' ? domtoimage.toJpeg : domtoimage.toPng;
+      exportFn(chartWrapper, exportOptions)
+        .then((dataUrl) => {
+          const link = document.createElement('a');
+          link.download = `${chartType}-data-${formatDate(new Date())}.${format}`;
+          link.href = dataUrl;
+          link.click();
+          setActiveDropdown(null);
+        })
+        .catch((error) => {
+          alert('Failed to export chart image.');
+          setActiveDropdown(null);
+        })
+        .finally(() => {
+          // Restore original padding
+          chartWrapper.style.paddingBottom = originalPaddingBottom;
+        });
+    }, 100);
   };
 
   // Close dropdown when clicking outside
@@ -1854,6 +1758,7 @@ const HiveDetails = () => {
       <Header isLoggedIn={false} hiveDetails={true}/>
       <FlowersRenderer />
 
+
       <button
         onClick={handleReturnClick}
         className='return-button'
@@ -1871,7 +1776,7 @@ const HiveDetails = () => {
       <div className="content-wrapperx">
         <div className="headerx">
           <h1 className={`main-titleHive ${theme === 'dark' ? 'dark' : 'light'}`}>
-            {hiveData.name},
+            {hiveData.name}
           </h1>
           <h2 className='real-time-data-title' style={{marginLeft: '0', textAlign: 'left'}}>
             Real-time temperature and humidity data inside the hive
@@ -1966,9 +1871,9 @@ const HiveDetails = () => {
           padding: '20px',
           marginBottom: '20px'
         }}>
-          <h2>PDF Report</h2>
+          <h2>Hive Report</h2>
           <p>
-            Get report manually via Telegram or wait for automatic report every 24 hours
+            Get report manually via Telegram
           </p>
           
           {successMessage && (
@@ -2016,6 +1921,7 @@ const HiveDetails = () => {
             {/* The automatic reporting button has been removed as reports are sent automatically every minute */}
           </div>
         </div>
+
 
         <div className="charts-container">
           <RealTimeTemperatureGraph 

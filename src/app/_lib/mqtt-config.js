@@ -4,7 +4,7 @@
  */
 
 // MQTT broker URL for WebSocket connection
-export const MQTT_URL = 'ws://test.mosquitto.org:8080';
+export const MQTT_URL = 'wss://test.mosquitto.org:8081';
 
 // Default client settings
 export const DEFAULT_MQTT_OPTIONS = {

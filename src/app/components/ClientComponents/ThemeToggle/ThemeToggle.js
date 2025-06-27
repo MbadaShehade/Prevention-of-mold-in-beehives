@@ -16,13 +16,14 @@ export default function ThemeToggle() {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
-  // Always render the toggle, but only make it functional after mounting
-  const currentTheme = mounted ? theme : 'light';
-  
+  // Only render after component has mounted to avoid hydration mismatch
+  if (!mounted) return null;
+  const currentTheme = theme;
+
   return (
     <button 
       className="theme-toggle" 
-      onClick={mounted ? handleToggleTheme : undefined} 
+      onClick={handleToggleTheme} 
       aria-label="Toggle dark mode"
       suppressHydrationWarning
     >

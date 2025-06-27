@@ -541,7 +541,7 @@ input#email.form-input {
 
 .password-toggle-btn {
   position: absolute;
-  right: 10px;
+  right: -5%;
   top: 50%;
   transform: translateY(-50%);
   background: none;
@@ -553,6 +553,10 @@ input#email.form-input {
   padding: 5px;
   color: #6d6c6c;
   transition: color 0.2s ease;
+}
+
+.password-toggle-btn svg {
+  margin-right: 35px;
 }
 
 .password-toggle-btn:hover {
@@ -581,6 +585,22 @@ input#email.form-input {
   .password-toggle-btn svg {
     width: 16px;
     height: 16px;
+  }
+}
+
+@media (max-width: 576px) {
+  .password-toggle-btn {
+    right: 8px;
+    margin-right: -65px;
+  }
+  
+  .password-toggle-btn svg {
+    width: 16px;
+    height: 16px;
+    margin-right: -65px;
+  }
+  .form-input{
+    font-size: 13px;
   }
 }
 
@@ -685,8 +705,78 @@ input#email.form-input {
   100% { opacity: 1; }
 } 
 
-@media (max-width: 768px) {
+@media (max-width: 576px) {
+  .form-input{
+    width: 100%;
+    margin-left: 40px;
+  }
+  .form-label{
+    margin-left: 40px;
+  }
+  .submit-button{
+    margin-left: 60px;
+  }
+  .login-title{
+    margin-left: 85px;
+  }
+  .login-tabs{
+    margin-left: 30px;
+  }
+  .login-tab{
+    margin-left: 30px;
+  }
+  .submit-buttonReset{
+    margin-left: 4px;
+    background: linear-gradient(to right, #8d7864, #5f462e);
+    color: white;
+    border: none;
+    border-radius: 15px;
+    padding: 12px 30px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    font-family: FreeMono, monospace;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    margin-top: 15px;
+    letter-spacing: 0.5px;
+    
+  }
+  .form-inputReset{
+    border-radius: 5px;
+    padding: 10px 15px;
+    font-size: 16px;
+    width: 90%;
+    font-family: monospace, sans-serif;
+  }
+  .theme-dark .form-inputReset {
+    background: #e4e3e3;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #000000;
+  }
+  .modal-title{
+    color: #000000;
+  }
 
+}
 
-  
+.eye-icon {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 576px) {
+  .eye-icon {
+    width: 16px;
+    height: 16px;
+
+  }
 }

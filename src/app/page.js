@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import './globals.css';
 import Header from './components/ClientComponents/Header/Header';
 import MoreDetails from './components/ServerComponents/MoreDetails/MoreDetails';
@@ -8,6 +9,7 @@ import HowItWorksSection from './components/ServerComponents/HowItWorksSection/H
 import FlowersRenderer from './components/ClientComponents/FlowersRenderer/FlowersRenderer';
 import SwipeUpButton from './components/ClientComponents/SwipeUpButton/SwipeUpButton';
 import ScrollHandler from './components/ClientComponents/ScrollHandler/ScrollHandler';
+
 
 export default function Home() {
   return (
