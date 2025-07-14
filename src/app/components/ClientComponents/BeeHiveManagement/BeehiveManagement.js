@@ -38,6 +38,7 @@ const BeehiveManagement = ({email, username, password, hiveGroups, setHiveGroups
   const [fakeHiveHistory, setFakeHiveHistory] = useState({});
   // Per-hive air pump activations
   const [fakeAirPumpActivations, setFakeAirPumpActivations] = useState({});
+  
 
   // Animate fake hive data to look more real and keep history
   useEffect(() => {
