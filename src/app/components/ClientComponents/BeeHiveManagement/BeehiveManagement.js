@@ -34,29 +34,62 @@ const BeehiveManagement = ({email, username, password, hiveGroups, setHiveGroups
 
   // Persist fake hive data for each hive
   const [fakeHiveData, setFakeHiveData] = useState({});
+  // Per-hive history for graphs
+  const [fakeHiveHistory, setFakeHiveHistory] = useState({});
+  // Per-hive air pump activations
+  const [fakeAirPumpActivations, setFakeAirPumpActivations] = useState({});
 
-  // Animate fake hive data to look more real
+  // Animate fake hive data to look more real and keep history
   useEffect(() => {
     const interval = setInterval(() => {
       setFakeHiveData(prev => {
         const newData = { ...prev };
-        Object.keys(newData).forEach(id => {
-          // Animate temp and humidity with small random walk
-          let temp = parseFloat(newData[id].temp);
-          let humidity = parseFloat(newData[id].humidity);
-          temp += (Math.random() - 0.5) * 0.3; // small change
-          humidity += (Math.random() - 0.5) * 0.7;
-          // Clamp values to plausible range
-          temp = Math.max(32, Math.min(40, temp));
-          humidity = Math.max(45, Math.min(80, humidity));
-          // Occasionally toggle air pump
-          let airPumpOn = newData[id].airPumpOn;
-          if (Math.random() < 0.08) airPumpOn = !airPumpOn;
-          newData[id] = {
-            temp: temp.toFixed(1),
-            humidity: humidity.toFixed(1),
-            airPumpOn,
-          };
+        setFakeHiveHistory(histPrev => {
+          const newHist = { ...histPrev };
+          setFakeAirPumpActivations(airPrev => {
+            const newAir = { ...airPrev };
+            Object.keys(newData).forEach(id => {
+              let temp = parseFloat(newData[id].temp);
+              let humidity = parseFloat(newData[id].humidity);
+              // Add a gentle trend and random walk
+              const trend = Math.sin(Date.now() / 60000 + Number(id)) * 0.2;
+              temp += (Math.random() - 0.5) * 0.3 + trend;
+              humidity += (Math.random() - 0.5) * 0.7 + trend * 2.2;
+              temp = Math.max(32, Math.min(40, temp));
+              humidity = Math.max(45, Math.min(80, humidity));
+              // Occasionally toggle air pump and log activation
+              let airPumpOn = newData[id].airPumpOn;
+              if (Math.random() < 0.08) {
+                airPumpOn = !airPumpOn;
+                if (airPumpOn) {
+                  // Log activation
+                  if (!newAir[id]) newAir[id] = [];
+                  newAir[id] = [...(newAir[id] || []), Date.now()];
+                  // Keep only last 10 activations
+                  if (newAir[id].length > 10) newAir[id] = newAir[id].slice(-10);
+                }
+              }
+              newData[id] = {
+                temp: temp.toFixed(1),
+                humidity: humidity.toFixed(1),
+                airPumpOn,
+              };
+              // Add to history
+              if (!newHist[id]) newHist[id] = [];
+              newHist[id] = [...newHist[id], {
+                temp: Number(temp.toFixed(1)),
+                humidity: Number(humidity.toFixed(1)),
+                timestamp: Date.now()
+              }];
+              // Keep only last 100 points
+              if (newHist[id].length > 100) newHist[id] = newHist[id].slice(-100);
+              // Save to localStorage for hiveDetails
+              localStorage.setItem(`fakeHiveHistory_${id}`, JSON.stringify(newHist[id]));
+              localStorage.setItem(`fakeAirPumpActivations_${id}`, JSON.stringify(newAir[id] || []));
+            });
+            return newAir;
+          });
+          return newHist;
         });
         return newData;
       });
@@ -200,128 +233,128 @@ const BeehiveManagement = ({email, username, password, hiveGroups, setHiveGroups
     console.log('Selecting hive with password:', password ? '[PRESENT]' : '[MISSING]');
     setSelectedHive(hive);
     setIsLoading(true);
-    setMessage({ text: 'Connecting to hive sensors...', type: 'info' });
-    
-    try {
-      const userNameForTopic = username || sessionStorage.getItem('username');
-      
-      if (!userNameForTopic) {
-        console.error('No username provided for MQTT topic');
-        setMessage({ text: 'Error: Missing username for MQTT topic', type: 'error' });
-        setTimeout(() => setMessage({ text: '', type: '' }), 3000);
-        setIsLoading(false);
-        return;
-      }
 
-      const client = mqtt.connect('wss://test.mosquitto.org:8081', {
-        clientId: `hiveguard_${Math.random().toString(16).substr(2, 8)}`,
-        clean: true,
-        reconnectPeriod: 0,
-        connectTimeout: 30000, 
-        keepalive: 60,       
-        resubscribe: false,   
-        protocol: 'wss',       
-        qos: 1               
-      });
-
-      let connectionTimeout = setTimeout(() => {
-        if (client) {
-          clearTimeout(dataTimeout);
-          client.end(true);
-          setMessage({ text: 'Connection timeout. Please try again.', type: 'error' });
+    // If hive 1, use real MQTT data as before
+    if (hive.id === 1) {
+      try {
+        const userNameForTopic = username || sessionStorage.getItem('username');
+        if (!userNameForTopic) {
+          console.error('No username provided for MQTT topic');
+          setMessage({ text: 'Error: Missing username for MQTT topic', type: 'error' });
           setTimeout(() => setMessage({ text: '', type: '' }), 3000);
           setIsLoading(false);
+          return;
         }
-      }, 15000); // 15 seconds
-
-      let dataTimeout = setTimeout(() => {
-        if (client) {
+        const client = mqtt.connect('wss://test.mosquitto.org:8081', {
+          clientId: `hiveguard_${Math.random().toString(16).substr(2, 8)}`,
+          clean: true,
+          reconnectPeriod: 0,
+          connectTimeout: 30000, 
+          keepalive: 60,       
+          resubscribe: false,   
+          protocol: 'wss',       
+          qos: 1               
+        });
+        let connectionTimeout = setTimeout(() => {
+          if (client) {
+            clearTimeout(dataTimeout);
+            client.end(true);
+            setMessage({ text: 'Connection timeout. Please try again.', type: 'error' });
+            setTimeout(() => setMessage({ text: '', type: '' }), 3000);
+            setIsLoading(false);
+          }
+        }, 15000); // 15 seconds
+        let dataTimeout = setTimeout(() => {
+          if (client) {
+            clearTimeout(connectionTimeout);
+            client.end(true);
+            setMessage({ text: 'No sensor data received. Please check your hive sensors.', type: 'error' });
+            setTimeout(() => setMessage({ text: '', type: '' }), 4000);
+            setIsLoading(false);
+          }
+        }, 15000); // 15 seconds
+        client.on('connect', () => {
           clearTimeout(connectionTimeout);
-          client.end(true);
-          setMessage({ text: 'No sensor data received. Please check your hive sensors.', type: 'error' });
-          setTimeout(() => setMessage({ text: '', type: '' }), 4000);
-          setIsLoading(false);
-        }
-      }, 15000); // 15 seconds
-
-      client.on('connect', () => {
-        clearTimeout(connectionTimeout);
-        console.log('Connected to MQTT broker');
-        
-        const tempTopic = `${userNameForTopic}/moldPrevention/hive${hive.id}/temp`;
-        const humidityTopic = `${userNameForTopic}/moldPrevention/hive${hive.id}/humidity`;
-        
-        // Only subscribe if client is still connected
-        if (client.connected) {
-          client.subscribe([tempTopic, humidityTopic], (err) => {
-            if (err) {
-              console.error('Subscription error:', err);
-              client.end();
-              clearTimeout(dataTimeout);
-              setMessage({ text: 'Error connecting to hive sensors', type: 'error' });
-              setTimeout(() => setMessage({ text: '', type: '' }), 3000);
-              setIsLoading(false);
-            }
-          });
-        }
-      });
-
-      let initialDataReceived = {
-        temperature: false,
-        humidity: false
-      };
-
-      let tempValue = null;
-      let humidityValue = null;
-
-      client.on('message', (topic, message) => {
-        const value = parseFloat(message.toString());
-        if (isNaN(value)) return;
-
-        if (topic.endsWith('/temp')) {
-          tempValue = value;  
-          initialDataReceived.temperature = true;
-        } else if (topic.endsWith('/humidity')) {
-          humidityValue = value;  
-          initialDataReceived.humidity = true;
-        }
-
-        if (initialDataReceived.temperature && initialDataReceived.humidity) {
-          client.end();
+          console.log('Connected to MQTT broker');
+          const tempTopic = `${userNameForTopic}/moldPrevention/hive${hive.id}/temp`;
+          const humidityTopic = `${userNameForTopic}/moldPrevention/hive${hive.id}/humidity`;
+          // Only subscribe if client is still connected
+          if (client.connected) {
+            client.subscribe([tempTopic, humidityTopic], (err) => {
+              if (err) {
+                console.error('Subscription error:', err);
+                client.end();
+                clearTimeout(dataTimeout);
+                setMessage({ text: 'Error connecting to hive sensors', type: 'error' });
+                setTimeout(() => setMessage({ text: '', type: '' }), 3000);
+                setIsLoading(false);
+              }
+            });
+          }
+        });
+        let initialDataReceived = {
+          temperature: false,
+          humidity: false
+        };
+        let tempValue = null;
+        let humidityValue = null;
+        client.on('message', (topic, message) => {
+          const value = parseFloat(message.toString());
+          if (isNaN(value)) return;
+          if (topic.endsWith('/temp')) {
+            tempValue = value;  
+            initialDataReceived.temperature = true;
+          } else if (topic.endsWith('/humidity')) {
+            humidityValue = value;  
+            initialDataReceived.humidity = true;
+          }
+          if (initialDataReceived.temperature && initialDataReceived.humidity) {
+            client.end();
+            clearTimeout(dataTimeout);
+            localStorage.setItem(`hiveData_${hive.id}`, JSON.stringify({
+              data: {
+                temperature: tempValue,    
+                humidity: humidityValue,   
+                name: `Hive ${hive.id}`
+              },
+              timestamp: Date.now()
+            }));
+            router.push(`/hiveDetails?id=${hive.id}&email=${encodeURIComponent(email)}&username=${encodeURIComponent(userNameForTopic)}&password=${encodeURIComponent(password)}&name=${encodeURIComponent(hive.name)}`);
+          }
+        });
+        client.on('error', (err) => {
+          console.error('MQTT Error:', err);
+          clearTimeout(connectionTimeout);
           clearTimeout(dataTimeout);
-          
-          localStorage.setItem(`hiveData_${hive.id}`, JSON.stringify({
-            data: {
-              temperature: tempValue,    
-              humidity: humidityValue,   
-              name: `Hive ${hive.id}`
-            },
-            timestamp: Date.now()
-          }));
-
-          router.push(`/hiveDetails?id=${hive.id}&email=${encodeURIComponent(email)}&username=${encodeURIComponent(userNameForTopic)}&password=${encodeURIComponent(password)}&name=${encodeURIComponent(hive.name)}`);
-        }
-      });
-
-      client.on('error', (err) => {
-        console.error('MQTT Error:', err);
-        clearTimeout(connectionTimeout);
-        clearTimeout(dataTimeout);
-        client.end();
-        setMessage({ text: 'Error connecting to hive sensors', type: 'error' });
+          client.end();
+          setMessage({ text: 'Error connecting to hive sensors', type: 'error' });
+          setTimeout(() => setMessage({ text: '', type: '' }), 3000);
+          setIsLoading(false);
+        });
+        client.on('close', () => {
+          clearTimeout(connectionTimeout);
+          clearTimeout(dataTimeout);
+          console.log('MQTT connection closed');
+        });
+      } catch (error) {
+        console.error('Error fetching hive data:', error);
+        setMessage({ text: 'Failed to load hive data', type: 'error' });
         setTimeout(() => setMessage({ text: '', type: '' }), 3000);
         setIsLoading(false);
-      });
-
-      client.on('close', () => {
-        clearTimeout(connectionTimeout);
-        clearTimeout(dataTimeout);
-        console.log('MQTT connection closed');
-      });
-    } catch (error) {
-      console.error('Error fetching hive data:', error);
-      setMessage({ text: 'Failed to load hive data', type: 'error' });
-      setTimeout(() => setMessage({ text: '', type: '' }), 3000);
+      }
+    } else {
+      // For all other hives, use fake data
+      const fake = fakeHiveData[hive.id] || { temp: '--', humidity: '--', airPumpOn: false };
+      localStorage.setItem(`hiveData_${hive.id}`, JSON.stringify({
+        data: {
+          temperature: Number(fake.temp),
+          humidity: Number(fake.humidity),
+          airPumpOn: fake.airPumpOn,
+          name: hive.name || `Hive ${hive.id}`
+        },
+        timestamp: Date.now()
+      }));
+      router.push(`/hiveDetails?id=${hive.id}&email=${encodeURIComponent(email)}&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&name=${encodeURIComponent(hive.name)}`);
       setIsLoading(false);
     }
   };
