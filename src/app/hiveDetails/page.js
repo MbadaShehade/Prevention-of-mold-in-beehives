@@ -41,7 +41,6 @@ const formatDate = (date) => {
   return `${day}/${month}/${year}`;
 };
 
-
 const HiveDetails = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -49,6 +48,116 @@ const HiveDetails = () => {
   const email = searchParams.get('email');
   const hiveName = searchParams.get('name') || `Hive ${hiveId}`;
   const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (hiveId === '1') return;
+    // More dynamic, realistic fake data simulation
+    let temp = 30 + Math.random() * 5; // start 30-35
+    let hum = 50 + Math.random() * 10; // start 50-60
+    let airPumpOn = false;
+    let lastPumpToggle = Date.now();
+    let fakeActivations = [];
+    let fakeHistory = [];
+    let fakeHistorical = [];
+    // Load from localStorage if available
+    if (typeof window !== 'undefined') {
+      const d = localStorage.getItem(`fakeHiveData_${hiveId}`);
+      if (d) {
+        const f = JSON.parse(d);
+        temp = f.temperature || temp;
+        hum = f.humidity || hum;
+        airPumpOn = f.airPump === 'ON';
+      }
+      const h = localStorage.getItem(`fakeHiveHistory_${hiveId}`);
+      if (h) fakeHistory = JSON.parse(h);
+      const a = localStorage.getItem(`airPumpActivations_${hiveId}`);
+      if (a) fakeActivations = JSON.parse(a);
+      const hist = localStorage.getItem(`historicalData_hive_${hiveId}`);
+      if (hist) fakeHistorical = JSON.parse(hist);
+    }
+    const interval = setInterval(() => {
+      // Dynamic random walk
+      temp += (Math.random() - 0.5) * 1.5;
+      hum += (Math.random() - 0.5) * 2.5;
+      temp = Math.max(25, Math.min(45, temp));
+      hum = Math.max(30, Math.min(90, hum));
+      // Air pump random toggle
+      if (!airPumpOn && Math.random() < 0.12) {
+        airPumpOn = true;
+        lastPumpToggle = Date.now();
+        const activation = {
+          date: formatDate(new Date()),
+          duration: '00:00:10',
+          timestamp: new Date().toISOString()
+        };
+        fakeActivations = [activation, ...fakeActivations].slice(0, 10);
+      } else if (airPumpOn && Date.now() - lastPumpToggle > 10000) {
+        airPumpOn = false;
+      }
+      // Update hiveData for UI
+      const newFakeData = {
+        temperature: Number(temp.toFixed(2)),
+        humidity: Number(hum.toFixed(2)),
+        airPump: airPumpOn ? 'ON' : 'OFF',
+      };
+      setHiveData(prev => ({ ...prev, ...newFakeData }));
+      setAirPumpActivations([...fakeActivations]);
+      // Update real-time chart data (temperature)
+      setTemperatureData(prev => {
+        const newLabels = [...prev.labels, formatTime(new Date())].slice(-MAX_DATA_POINTS);
+        const newData = [...prev.datasets[0].data, newFakeData.temperature].slice(-MAX_DATA_POINTS);
+        return {
+          ...prev,
+          labels: newLabels,
+          datasets: [{ ...prev.datasets[0], data: newData }]
+        };
+      });
+      // Update real-time chart data (humidity)
+      setHumidityData(prev => {
+        const newLabels = [...prev.labels, formatTime(new Date())].slice(-MAX_DATA_POINTS);
+        const newData = [...prev.datasets[0].data, newFakeData.humidity].slice(-MAX_DATA_POINTS);
+        return {
+          ...prev,
+          labels: newLabels,
+          datasets: [{ ...prev.datasets[0], data: newData }]
+        };
+      });
+      setHistoricalData(prev => {
+        const currentDate = formatDate(new Date());
+        let labels = prev.labels || [];
+        let tempIdx = prev.datasets[0]?.label?.includes('Temperature') ? 0 : 1;
+        let humIdx = prev.datasets[1]?.label?.includes('Humidity') ? 1 : 0;
+        let tempData = prev.datasets[tempIdx]?.data || [];
+        let humData = prev.datasets[humIdx]?.data || [];
+        let found = labels.indexOf(currentDate);
+        if (found === -1) {
+          labels = [...labels, currentDate];
+          tempData = [...tempData, newFakeData.temperature];
+          humData = [...humData, newFakeData.humidity];
+        } else {
+          tempData = [...tempData];
+          humData = [...humData];
+          tempData[found] = Math.max(tempData[found] || -Infinity, newFakeData.temperature);
+          humData[found] = Math.max(humData[found] || -Infinity, newFakeData.humidity);
+        }
+        const newState = {
+          labels,
+          datasets: [
+            { ...prev.datasets[0], data: tempData },
+            { ...prev.datasets[1], data: humData }
+          ]
+        };
+        return newState;
+      });
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [hiveId]);
+
   const { theme } = useTheme();
   const [airPumpDate, setAirPumpDate] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null);

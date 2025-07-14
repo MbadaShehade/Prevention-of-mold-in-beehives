@@ -148,9 +148,9 @@ export default function HiveComparisonBarChart({ hives, fakeHiveData, selectedHi
         >
           Select Hives to Compare:
         </span>
-        {hives.map(hive => (
+        {hives.map((hive, index) => (
           <label
-            key={hive.id}
+            key={`${hive.id}-${index}`}
             style={{
               marginRight: 14,
               fontFamily: 'FreeMono, monospace',
