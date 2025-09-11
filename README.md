@@ -1,8 +1,9 @@
 # 🐝 Prevention of Mold in Beehives
 
 ## 📌 Project Overview  
-Mold growth in beehives is a major concern for beekeepers, impacting colony health, reducing honey production, and leading to potential colony collapse. This project presents an **IoT-based system** that integrates **sensors and machine learning** to monitor and regulate hive conditions, preventing mold formation.
+Mold growth in beehives is a major concern for beekeepers, impacting colony health, reducing honey production, and leading to potential colony collapse. This project presents an **IoT-based system** to monitor and regulate hive conditions, preventing mold formation.
 
+## SUS Questionnaire
 https://docs.google.com/forms/d/e/1FAIpQLSdpEeAqWemIf5T-WAitUrA0G61sHLp13U4fhisKlyPdfgqJ8A/viewform
 
 
@@ -12,36 +13,23 @@ https://docs.google.com/forms/d/e/1FAIpQLSdpEeAqWemIf5T-WAitUrA0G61sHLp13U4fhisK
 ✅ **Real-time Monitoring**: Tracks temperature and humidity inside the beehive.  
 ✅ **Automated Alerts**: Sends notifications when conditions favor mold growth.  
 ✅ **Data Visualization**: Displays real-time and historical data using interactive charts.  
-✅ **Machine Learning Insights**: Predicts mold risks and provides actionable recommendations.  
 ✅ **Remote Access**: Cloud-based storage ensures data accessibility from anywhere.  
 
 ---
-
-## 🛠️ Tech Stack  
-### Backend:  
-- ![Python](https://img.shields.io/badge/Python-3.9-blue) (Data processing & ML algorithms)  
-- ![MongoDB](https://img.shields.io/badge/Database-MongoDB-green) (Sensor data storage)  
-
-### Frontend:  
-- ![Next.js](https://img.shields.io/badge/Frontend-Next.js-black) (User interface)  
-- ![CSS](https://img.shields.io/badge/Styling-CSS-blue)  
-- ![Chart.js](https://img.shields.io/badge/Visualization-Chart.js-red) (Data visualization)  
-
 ### IoT & Communication:  
 - **MQTT Protocol** (Real-time data transmission)  
-- **LoRa868 & Wi-Fi** (Data communication)  
+- **4G Modem & Wi-Fi** (Data communication)  
 
 ---
 
 ## 🎯 System Architecture  
 ```
-[ Sensors ] → [ M5Stack ] → [ LoRa868 ] → [ Cloud Storage (MongoDB) ] → [ Web Dashboard ]
+[ Sensors ] → [ M5Stack ] → [ 4G modem ] → [ Cloud Storage (MongoDB) ] → [ Web Dashboard ]
 ```
 1. **Sensors** (Temperature & Humidity) collect data from the hive.  
-2. **Data Transmission** via MQTT using LoRa868 to a central device (M5Stack).  
+2. **Data Transmission** via MQTT using 4G modem to a central device (M5Stack).  
 3. **Cloud Storage** (MongoDB) for long-term data retention.  
 4. **User Dashboard** displays graphs & alerts using Next.js.  
-5. **ML Model** predicts mold risk based on collected data.  
 
 ---
 
@@ -82,7 +70,6 @@ https://docs.google.com/forms/d/e/1FAIpQLSdpEeAqWemIf5T-WAitUrA0G61sHLp13U4fhisK
 The system is tested for:  
 - ✅ **Data accuracy** (temperature & humidity readings)  
 - ✅ **Response time** (sensor-to-dashboard updates)  
-- ✅ **ML predictions** (mold risk detection)  
 - ✅ **UI functionality** (dashboard & alerts)  
 
 ---
