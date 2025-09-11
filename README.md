@@ -4,6 +4,26 @@
 Mold growth in beehives is a major concern for beekeepers, impacting colony health, reducing honey production, and leading to potential colony collapse. This project presents an **IoT-based system** to monitor and regulate hive conditions, preventing mold formation.
 
 
+1. Log in to our website using the credentials:
+
+    User name: testesT1
+
+    Email: test@gmail.com
+
+    Password: testesT1
+
+
+2. Explore the following features:
+     - Add and monitor all hives condition at the same time.
+     - View real-time humidity and temperature data inside each hive separately.
+     - Observe air pump activations triggered by environmental conditions. 
+     - Download or view daily reports.
+     - Explore historical graph.
+     - Check last air pump activations table.
+
+Website: https://prevention-of-mold-in-beehives-sf98.vercel.app/
+
+
 ---
 
 ## 🚀 Features  
