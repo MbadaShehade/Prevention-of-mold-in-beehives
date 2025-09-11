@@ -78,7 +78,7 @@ Website: https://prevention-of-mold-in-beehives-sf98.vercel.app/
 ## 📥 Installation & Setup  
 -Not Yet-
 
-### 4️⃣ Set up MQTT broker & LoRa868 connectivity.  
+### 4️⃣ Set up MQTT broker & 4G modem connectivity.  
 ### 5️⃣ Connect the sensors and ensure data transmission is active.  
 
 ---
